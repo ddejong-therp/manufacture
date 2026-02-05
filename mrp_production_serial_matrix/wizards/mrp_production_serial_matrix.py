@@ -223,7 +223,10 @@ class MrpProductionSerialMatrix(models.TransientModel):
             )
         mos = self.env["mrp.production"]
         current_mo = self.production_id
+        danny_i = -1
+        danny_stop = len(self.finished_lot_ids) / 2
         for fp_lot in self.finished_lot_ids:
+            danny_i += 1
             # Apply selected lots in matrix and set the qty producing
             current_mo.lot_producing_id = fp_lot
             current_mo.qty_producing = 1.0
@@ -267,6 +270,10 @@ class MrpProductionSerialMatrix(models.TransientModel):
                     }
                 )
                 wizard.action_backorder()
+                if not self.env.registry.in_test_mode():
+                    self.env.cr.commit()
+                if danny_i >= danny_stop:
+                    raise Exception("BREAK")
 
                 backorder_ids = (
                     current_mo.procurement_group_id.mrp_production_ids.filtered(
@@ -277,6 +284,10 @@ class MrpProductionSerialMatrix(models.TransientModel):
                 if not current_mo:
                     break
             else:
+                if not self.env.registry.in_test_mode():
+                    self.env.cr.commit()
+                if danny_i >= danny_stop:
+                    raise Exception("BREAK")
                 break
 
         # TODO: not specified lots: auto create lots?
